@@ -138,6 +138,8 @@ static inline void ulmk_watchdog_fn(struct timer_list *t) {}
 static inline void ulmk_watchdog_pet(struct timer_list *t) {}
 #endif
 
+extern void wake_oom_reaper(struct task_struct *tsk);
+
 /* sysctls */
 extern int sysctl_oom_dump_tasks;
 extern int sysctl_oom_kill_allocating_task;
