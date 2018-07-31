@@ -488,9 +488,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	int array_size = ARRAY_SIZE(lowmem_adj);
 	int other_free;
 	int other_file;
-
-	if (!mutex_trylock(&scan_mutex))
-		return 0;
+	bool lock_required = true;
 
 	other_free = global_zone_page_state(NR_FREE_PAGES) - totalreserve_pages;
 
@@ -503,6 +501,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 					total_swapcache_pages();
 	else
 		other_file = 0;
+
+	if (!get_nr_swap_pages() && (other_free <= lowmem_minfree[0] >> 1) &&
+	    (other_file <= lowmem_minfree[0] >> 1))
+		lock_required = false;
+
+	if (likely(lock_required) && !mutex_trylock(&scan_mutex))
+		return 0;
 
 	tune_lmk_param(&other_free, &other_file, sc);
 
@@ -529,7 +534,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		trace_almk_shrink(0, ret, other_free, other_file, 0);
 		lowmem_print(5, "%s %lu, %x, return 0\n",
 			     __func__, sc->nr_to_scan, sc->gfp_mask);
-		mutex_unlock(&scan_mutex);
+		if (lock_required)
+			mutex_unlock(&scan_mutex);
 		return 0;
 	}
 
@@ -560,7 +566,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 						lowmem_deathpending_timeout)) {
 					task_unlock(p);
 					rcu_read_unlock();
-					mutex_unlock(&scan_mutex);
+					if (lock_required)
+						mutex_unlock(&scan_mutex);
 					return 0;
 				}
 			}
@@ -569,7 +576,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 					   lowmem_deathpending_timeout))
 				if (test_task_lmk_waiting(tsk)) {
 					rcu_read_unlock();
-					mutex_unlock(&scan_mutex);
+					if (lock_required)
+						mutex_unlock(&scan_mutex);
 					return 0;
 				}
 
@@ -612,7 +620,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 				     selected->comm,
 				     selected->pid);
 			rcu_read_unlock();
-			mutex_unlock(&scan_mutex);
+			if (lock_required)
+				mutex_unlock(&scan_mutex);
 			return 0;
 		}
 
@@ -680,7 +689,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 	lowmem_print(4, "%s %lu, %x, return %lu\n",
 		     __func__, sc->nr_to_scan, sc->gfp_mask, rem);
-	mutex_unlock(&scan_mutex);
+	if (lock_required)
+		mutex_unlock(&scan_mutex);
 	return rem;
 }
 
