@@ -5803,6 +5803,7 @@ static struct platform_driver arm_smmu_driver = {
 		.of_match_table	= of_match_ptr(arm_smmu_of_match),
 		.pm		= &arm_smmu_pm_ops,
 		.suppress_bind_attrs = true,
+		.probe_type	= PROBE_FORCE_SYNCHRONOUS,
 	},
 	.probe	= arm_smmu_device_dt_probe,
 	.remove	= arm_smmu_device_remove,
