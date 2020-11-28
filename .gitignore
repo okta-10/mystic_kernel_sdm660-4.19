@@ -137,4 +137,6 @@ all.config
 kernel/configs/android-*.cfg
 
 *.sh
-/out
+
+# Object directory
+out/
