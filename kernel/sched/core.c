@@ -919,7 +919,7 @@ static void uclamp_sync_util_min_rt_default(void)
 	 * task.
 	 */
 	read_lock(&tasklist_lock);
-	smp_mb__before_spinlock();
+	smp_mb__after_spinlock();
 	read_unlock(&tasklist_lock);
 
 	rcu_read_lock();
