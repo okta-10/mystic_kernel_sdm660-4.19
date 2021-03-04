@@ -235,7 +235,9 @@ static bool static_key_slow_try_dec(struct static_key *key)
 	return true;
 }
 
-static void __static_key_slow_dec_cpuslocked(struct static_key *key)
+static void __static_key_slow_dec_cpuslocked(struct static_key *key,
+					   unsigned long rate_limit,
+					   struct delayed_work *work)
 {
 	lockdep_assert_cpus_held();
 
@@ -243,15 +245,23 @@ static void __static_key_slow_dec_cpuslocked(struct static_key *key)
 		return;
 
 	jump_label_lock();
-	if (atomic_dec_and_test(&key->enabled))
-		jump_label_update(key);
+	if (atomic_dec_and_test(&key->enabled)) {
+		if (rate_limit) {
+			atomic_inc(&key->enabled);
+			schedule_delayed_work(work, rate_limit);
+		} else {
+			jump_label_update(key);
+		}
+	}
 	jump_label_unlock();
 }
 
-static void __static_key_slow_dec(struct static_key *key)
+static void __static_key_slow_dec(struct static_key *key,
+				  unsigned long rate_limit,
+				  struct delayed_work *work)
 {
 	cpus_read_lock();
-	__static_key_slow_dec_cpuslocked(key);
+	__static_key_slow_dec_cpuslocked(key, rate_limit, work);
 	cpus_read_unlock();
 }
 
@@ -259,21 +269,21 @@ void jump_label_update_timeout(struct work_struct *work)
 {
 	struct static_key_deferred *key =
 		container_of(work, struct static_key_deferred, work.work);
-	__static_key_slow_dec(&key->key);
+	__static_key_slow_dec(&key->key, 0, NULL);
 }
 EXPORT_SYMBOL_GPL(jump_label_update_timeout);
 
 void static_key_slow_dec(struct static_key *key)
 {
 	STATIC_KEY_CHECK_USE(key);
-	__static_key_slow_dec(key);
+	__static_key_slow_dec(key, 0, NULL);
 }
 EXPORT_SYMBOL_GPL(static_key_slow_dec);
 
 void static_key_slow_dec_cpuslocked(struct static_key *key)
 {
 	STATIC_KEY_CHECK_USE(key);
-	__static_key_slow_dec_cpuslocked(key);
+	__static_key_slow_dec_cpuslocked(key, 0, NULL);
 }
 
 void __static_key_slow_dec_deferred(struct static_key *key,
@@ -281,11 +291,7 @@ void __static_key_slow_dec_deferred(struct static_key *key,
 				    unsigned long timeout)
 {
 	STATIC_KEY_CHECK_USE(key);
-
-	if (static_key_slow_try_dec(key))
-		return;
-
-	schedule_delayed_work(work, timeout);
+	__static_key_slow_dec(key, timeout, work);
 }
 EXPORT_SYMBOL_GPL(__static_key_slow_dec_deferred);
 
