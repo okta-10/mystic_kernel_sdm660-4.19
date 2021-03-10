@@ -10,6 +10,7 @@
 #include <linux/fb.h>
 #include <linux/input.h>
 #include <linux/kthread.h>
+#include <uapi/linux/sched/types.h>
 #include <linux/moduleparam.h>
 
 static unsigned int input_boost_freq_lp __read_mostly =
