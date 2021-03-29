@@ -266,9 +266,7 @@
 	config {
 		/delete-property/ output-high;
 		pins = "gpio75";
-		drive-strength = <6>;
-		bias-pull-up;
-		/delete-property/ bias-disable;
+		output-low;
 	};
 };
 
@@ -281,8 +279,8 @@
 		/delete-property/ bias-pull-down;
 		/delete-property/ output-low;
 		pins = "gpio75";
-		drive-strength = <6>;
-		bias-pull-up;
+		bias-disable;
+		output-high;
 	};
 };
 
