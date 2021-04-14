@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2020, 2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -122,15 +122,15 @@ int qcom_ice_config_start(struct request *req,struct ice_data_setting *setting);
 #else
 static inline int enable_ice_setup(struct ice_device *ice_dev)
 {
-	return 0;
+	return -ENODEV;
 }
 static inline int disable_ice_setup(struct ice_device *ice_dev)
 {
-	return 0;
+	return -ENODEV;
 }
 static inline int qcom_ice_setup_ice_hw(const char *storage_type, int enable)
 {
-	return 0;
+	return -ENODEV;
 }
 static inline void qcom_ice_set_fde_flag(int flag) {}
 static inline struct list_head *get_ice_dev_list(void)
