@@ -2223,46 +2223,27 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 * If cache size is higher than 0, this indicates
 	 * the existence of cache and it can be turned on.
 	 */
-	if (!mmc_card_broken_hpi(card) && card->ext_csd.cache_size > 0) {
-		if (card->ext_csd.hpi_en &&
-			(!(card->quirks & MMC_QUIRK_CACHE_DISABLE))) {
-			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-					EXT_CSD_CACHE_CTRL, 1,
-					card->ext_csd.generic_cmd6_time);
-			if (err && err != -EBADMSG) {
-				pr_err("%s: %s: fail on CACHE_CTRL ON %d\n",
+	if (!mmc_card_broken_hpi(card) &&
+	    (card->ext_csd.cache_size > 0) && card->ext_csd.hpi_en) {
+		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+				EXT_CSD_CACHE_CTRL, 1,
+				card->ext_csd.generic_cmd6_time);
+		if (err && err != -EBADMSG) {
+			pr_err("%s: %s: mmc_switch() for CACHE_CTRL fails %d\n",
 					mmc_hostname(host), __func__, err);
-				goto free_card;
-			}
+			goto free_card;
+		}
 
-			/*
-			 * Only if no error, cache is turned on successfully.
-			 */
-			if (err) {
-				pr_warn("%s: Cache is supported, but failed to turn on (%d)\n",
-					mmc_hostname(card->host), err);
-				card->ext_csd.cache_ctrl = 0;
-				err = 0;
-			} else {
-				card->ext_csd.cache_ctrl = 1;
-			}
+		/*
+		 * Only if no error, cache is turned on successfully.
+		 */
+		if (err) {
+			pr_warn("%s: Cache is supported, but failed to turn on (%d)\n",
+				mmc_hostname(card->host), err);
+			card->ext_csd.cache_ctrl = 0;
+			err = 0;
 		} else {
-			/*
-			 * mmc standard doesn't say what is the card default
-			 * value for EXT_CSD_CACHE_CTRL.
-			 * Hence, cache may be enabled by default by
-			 * card vendors.
-			 * Thus, it is best to explicitly disable cache in case
-			 * we want to avoid cache.
-			 */
-			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-					EXT_CSD_CACHE_CTRL, 0,
-					card->ext_csd.generic_cmd6_time);
-			if (err) {
-				pr_err("%s: %s: fail on CACHE_CTRL OFF %d\n",
-					mmc_hostname(host), __func__, err);
-				goto free_card;
-			}
+			card->ext_csd.cache_ctrl = 1;
 		}
 	}
 
@@ -2548,6 +2529,12 @@ static int mmc_test_awake_ext_csd(struct mmc_host *host)
 	kfree(ext_csd);
 
 	return err;
+}
+
+static bool _mmc_cache_enabled(struct mmc_host *host)
+{
+	return host->card->ext_csd.cache_size > 0 &&
+	       host->card->ext_csd.cache_ctrl & 1;
 }
 
 static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
@@ -2972,6 +2959,7 @@ static const struct mmc_bus_ops mmc_ops = {
 	.hw_reset = _mmc_hw_reset,
 	.change_bus_speed = mmc_change_bus_speed,
 	.change_bus_speed_deferred = mmc_change_bus_speed_deferred,
+	.cache_enabled = _mmc_cache_enabled,
 };
 
 /*
