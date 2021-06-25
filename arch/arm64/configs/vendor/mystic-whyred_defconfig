@@ -623,6 +623,7 @@ CONFIG_TAS2557_MISC=y
 # CONFIG_SND_I2S_PRIMARY is not set
 # CONFIG_SND_SOC_MAX98937 is not set
 # CONFIG_ELLIPTICLABS is not set
+CONFIG_SOUND_CONTROL=y
 
 #
 # General architecture-dependent options
