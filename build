@@ -6,7 +6,7 @@
 KERNEL_DIR=$PWD
 
 # Kernel Release Version
-RELEASE_VERSION=""
+RELEASE_VERSION="_r3.6"
 
 # Device Name
 if [[ "$*" =~ "whyred" ]]; then
