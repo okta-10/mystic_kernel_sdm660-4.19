@@ -301,6 +301,15 @@ int msm_jpeg_platform_init(irqreturn_t (*handler)(int, void *),
 		pgmn_dev->hw_version);
 	pgmn_dev->state = MSM_JPEG_INIT;
 
+	rc = msm_jpeg_set_init_dt_parms(pgmn_dev, "qcom,vbif-qos-setting",
+		pgmn_dev->vbif_base);
+	if (rc == -ENOENT)
+		JPEG_DBG("%s: No qcom,vbif-qos-setting property\n", __func__);
+	else if (rc < 0) {
+		JPEG_PR_ERR("%s: vbif qos params set fail\n", __func__);
+		goto err_reg_enable;
+	}
+
 	return 0;
 err_reg_irq_fail:
 err_fail_set_vbif:

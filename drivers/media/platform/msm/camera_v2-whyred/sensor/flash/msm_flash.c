@@ -690,7 +690,7 @@ static int32_t msm_flash_query_current(
 
 	if (flash_ctrl->switch_trigger) {
 		ret = qpnp_flash_led_prepare(flash_ctrl->switch_trigger,
-					QUERY_MAX_CURRENT, &max_current);
+					QUERY_MAX_AVAIL_CURRENT, &max_current);
 		if (ret < 0) {
 			pr_err("%s:%d Query max_avail_curr failed ret = %d\n",
 				__func__, __LINE__, ret);
